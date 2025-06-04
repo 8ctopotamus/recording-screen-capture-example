@@ -2,6 +2,10 @@ const videoElem = document.getElementById('video')
 const logElem = document.getElementById('log')
 const startElem = document.getElementById('start')
 const stopElem = document.getElementById('stop')
+const flipStreamElem = document.getElementById('flip-stream')
+
+let webcamStream = null
+let screenCaptureStream = null
 
 const domLogger = {
   log(msg) { logElem.textContent = `${logElem.textContent}\n${msg}` },
@@ -28,7 +32,15 @@ function dumpOptionsInfo() {
 async function startCapture() {
   logElem.textContent = ''
   try {
-    videoElem.srcObject = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions)
+    webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    videoElem.srcObject = webcamStream
+    videoElem.load()
+    videoElem.play()
+
+
+
+
+
     dumpOptionsInfo()
   } catch(err) {
     console.error(err)
@@ -36,12 +48,25 @@ async function startCapture() {
   }
 }
 
+const flipStream = async () => {
+  if (!screenCaptureStream) {
+    screenCaptureStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions)
+  }
+
+  videoElem.srcObject = videoElem.srcObject === webcamStream ? screenCaptureStream : webcamStream
+}
+
 async function stopCapture() {
-  const tracks = videoElem.tracks
-  tracks.forEach(track => track.stop())
+  // videoElem.tracks.forEach(track => track.stop())
+  webcamStream.getVideoTracks().forEach(track => track.stop())
+  screenCaptureStream.getVideoTracks().forEach(track => track.stop())
+  
   videoElem.srcObject = null
+  webcamStream = null
+  screenCaptureStream = null
 }
 
 startElem.addEventListener('click', startCapture, false)
 stopElem.addEventListener('click', stopCapture, false)
+flipStreamElem.addEventListener('click', flipStream)
 
